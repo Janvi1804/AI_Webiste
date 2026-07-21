@@ -1,0 +1,4 @@
+import { supabaseRequest } from "@/lib/supabase/server";
+import type { AuthenticatedWorkspace, Organization, OrganizationRole, Profile } from "@/types/auth";
+type MembershipRow={ role:OrganizationRole; organizations:Organization };
+export async function findWorkspaceForUser(userId:string):Promise<AuthenticatedWorkspace | null> { const profiles=await supabaseRequest<Profile[]>(`profiles?id=eq.${encodeURIComponent(userId)}&select=id,full_name,avatar_url,active_organization_id,onboarding_completed`); const profile=profiles[0]; if(!profile) return null; const memberships=await supabaseRequest<MembershipRow[]>(`organization_members?user_id=eq.${encodeURIComponent(userId)}&select=role,organizations(id,name,slug,company_name,industry)`); const membership=memberships.find(x=>x.organizations.id===profile.active_organization_id) ?? memberships[0]; return membership ? { profile, organization:membership.organizations, role:membership.role }:null; }

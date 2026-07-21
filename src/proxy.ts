@@ -1,0 +1,3 @@
+import { NextRequest, NextResponse } from "next/server";
+export function proxy(request:NextRequest){ const {pathname}=request.nextUrl; const userId=request.cookies.get("opervia-user-id")?.value; if(pathname.startsWith("/app") && !userId) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(pathname)}`,request.url)); if((pathname==="/login"||pathname==="/register") && userId) return NextResponse.redirect(new URL("/app",request.url)); return NextResponse.next(); }
+export const config={matcher:["/app/:path*","/login","/register"]};
