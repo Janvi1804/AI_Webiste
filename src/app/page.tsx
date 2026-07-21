@@ -27,6 +27,8 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [created, setCreated] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newItem, setNewItem] = useState("New project");
 
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
@@ -42,11 +44,11 @@ export default function Home() {
       <button className="workspace"><span className="workspace-logo">N</span><span><b>Northstar Studio</b><small>Growth workspace</small></span><span className="chevron">⌄</span></button>
       <nav aria-label="Main navigation">
         <p className="nav-label">WORKSPACE</p>
-        {navigation.map(item => <button key={item.label} onClick={() => setActive(item.label)} className={`nav-item ${active === item.label ? "active" : ""}`}><span className="nav-icon">{item.icon}</span>{item.label}{item.badge && <em>{item.badge}</em>}</button>)}
+        {navigation.map(item => <button key={item.label} onClick={() => { setActive(item.label); }} className={`nav-item ${active === item.label ? "active" : ""}`}><span className="nav-icon">{item.icon}</span>{item.label}{item.badge && <em>{item.badge}</em>}</button>)}
         <p className="nav-label spaced">INTELLIGENCE</p>
-        <button onClick={() => setAssistantOpen(true)} className="nav-item ai-nav"><span className="ai-icon">✦</span>AI Assistant<span className="new">New</span></button>
-        <button className="nav-item"><span className="nav-icon">↯</span>Automations</button>
-        <button className="nav-item"><span className="nav-icon">◌</span>Activity</button>
+        <button onClick={() => { setActive("AI Assistant"); setAssistantOpen(true); }} className="nav-item ai-nav"><span className="ai-icon">✦</span>AI Assistant<span className="new">New</span></button>
+        <button onClick={() => { setActive("Automations"); setCreated(true); }} className="nav-item"><span className="nav-icon">↯</span>Automations</button>
+        <button onClick={() => { setActive("Activity"); setCreated(true); }} className="nav-item"><span className="nav-icon">◌</span>Activity</button>
       </nav>
       <div className="sidebar-bottom">
         <button className="nav-item"><span className="nav-icon">?</span>Help center</button>
@@ -56,10 +58,11 @@ export default function Home() {
     </aside>
 
     <section className="content">
-      <header className="topbar"><div className="crumb"><span>Northstar Studio</span><b>/</b><strong>{active}</strong></div><div className="top-actions"><button onClick={() => setSearchOpen(true)} className="search"><span>⌕</span><span>Search anything</span><kbd>⌘ K</kbd></button><button className="icon-btn" aria-label="Notifications">♧<i></i></button><button onClick={() => setAssistantOpen(true)} className="assistant-button">✦ <span>Ask AI</span></button><button onClick={() => setCreated(true)} className="create-button">＋ <span>Create</span></button></div></header>
+      <header className="topbar"><div className="crumb"><span>Northstar Studio</span><b>/</b><strong>{active}</strong></div><div className="top-actions"><button onClick={() => setSearchOpen(true)} className="search"><span>⌕</span><span>Search anything</span><kbd>⌘ K</kbd></button><button className="icon-btn" aria-label="Notifications">♧<i></i></button><button onClick={() => setAssistantOpen(true)} className="assistant-button">✦ <span>Ask AI</span></button><button onClick={() => setCreateOpen(true)} className="create-button">＋ <span>Create</span></button></div></header>
       <div className="page">
-        <section className="intro"><div><p className="eyebrow">MONDAY, AUGUST 5</p><h1>Good morning, Janvi <span>✦</span></h1><p>Here is what needs your attention today.</p></div><div className="intro-actions"><button className="ghost-button">▦ Customize</button><button onClick={() => setCreated(true)} className="primary-button">＋ Create new</button></div></section>
+        <section className="intro"><div><p className="eyebrow">MONDAY, AUGUST 5</p><h1>Good morning, Janvi <span>✦</span></h1><p>Here is what needs your attention today.</p></div><div className="intro-actions"><button className="ghost-button">▦ Customize</button><button onClick={() => setCreateOpen(true)} className="primary-button">＋ Create new</button></div></section>
 
+        {active !== "Overview" && <ModuleBanner title={active} onCreate={() => setCreateOpen(true)} />}
         <section className="metrics" aria-label="Business metrics">
           <Metric icon="◫" title="Active projects" value="12" change="↑ 8.2%" detail="vs. last month" tint="violet" spark="spark-one" />
           <Metric icon="✓" title="Tasks due today" value="8" change="2 overdue" detail="needs attention" tint="orange" spark="spark-two" />
@@ -85,9 +88,11 @@ export default function Home() {
 
     {searchOpen && <div className="modal-wrap" role="dialog" aria-modal="true" aria-label="Search"><div className="command"><div className="command-search">⌕<input autoFocus placeholder="Search projects, tasks, customers..."/><kbd>ESC</kbd></div><p>QUICK ACTIONS</p>{["Create a new project", "Ask Opervia AI", "View tasks due today"].map(x => <button key={x} onClick={() => setSearchOpen(false)}>{x}<span>↵</span></button>)}</div></div>}
     {assistantOpen && <div className="assistant-drawer"><header><div><span className="ai-icon big">✦</span><div><b>Opervia AI</b><small>Your operations copilot</small></div></div><button onClick={() => setAssistantOpen(false)}>×</button></header><div className="assistant-chat"><div className="ai-message">I found <b>3 delivery risks</b> that need attention. Would you like a recovery plan for the affected projects?</div><div className="tool-status"><span>✓</span><div><b>Project health checked</b><small>Reviewed 12 active projects</small></div></div></div><div className="suggestions"><button>Show delayed projects</button><button>Create a task</button><button>Generate weekly report</button></div><div className="chat-input"><input placeholder="Ask anything about your business..."/><button>↑</button></div></div>}
-    {created && <div className="toast"><span>✓</span><div><b>Workspace ready for your next move</b><small>Create menus would open here in the full product.</small></div><button onClick={() => setCreated(false)}>×</button></div>}
+    {createOpen && <div className="modal-wrap" role="dialog" aria-modal="true" aria-label="Create new item"><form className="create-modal" onSubmit={(event) => { event.preventDefault(); setCreateOpen(false); setCreated(true); }}><button className="modal-close" type="button" onClick={() => setCreateOpen(false)}>×</button><p className="auth-kicker">CREATE</p><h2>Create something new</h2><p>Start a project, task, customer, or another workspace record.</p><label>Item name<input value={newItem} onChange={(event) => setNewItem(event.target.value)} autoFocus required /></label><label>Type<select defaultValue="Project"><option>Project</option><option>Task</option><option>Customer</option><option>Lead</option><option>Meeting</option></select></label><div><button type="button" className="ghost-button" onClick={() => setCreateOpen(false)}>Cancel</button><button className="primary-button" type="submit">Create item</button></div></form></div>}
+    {created && <div className="toast"><span>✓</span><div><b>{newItem} created</b><small>Your new workspace item is ready to organize.</small></div><button onClick={() => setCreated(false)}>×</button></div>}
   </main>;
 }
 
 function Metric({icon,title,value,change,detail,tint,spark}: {icon:string;title:string;value:string;change:string;detail:string;tint:string;spark:string}) { return <article className="metric card"><div className={`metric-icon ${tint}`}>{icon}</div><div className="metric-top"><p>{title}</p><button>•••</button></div><h2>{value}</h2><div className="metric-bottom"><span className={tint === "orange" ? "negative" : "positive"}>{change}</span><small>{detail}</small></div><div className={`spark ${spark}`}><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article> }
+function ModuleBanner({title,onCreate}:{title:string;onCreate:()=>void}) { return <section className="module-banner"><div><p className="section-kicker">WORKSPACE MODULE</p><h2>{title}</h2><p>Your {title.toLowerCase()} workspace is ready. Use the dashboard controls to create and manage records.</p></div><button className="primary-button" onClick={onCreate}>＋ Create {title === "Tasks" ? "task" : "new"}</button></section> }
 function Activity({avatar,text,time,color}: {avatar:string;text:React.ReactNode;time:string;color:string}) { return <article><span className={`avatar activity-avatar ${color}`}>{avatar}</span><div><p>{text}</p><small>{time}</small></div></article> }
