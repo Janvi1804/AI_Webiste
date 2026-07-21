@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server"; import { getSupabaseEnvironment } from "@/lib/supabase/env";
+export async function POST(request:Request){try{const {email}=await request.json() as {email:string};const {url,anonKey}=getSupabaseEnvironment();await fetch(`${url}/auth/v1/recover`,{method:"POST",headers:{apikey:anonKey,"Content-Type":"application/json"},body:JSON.stringify({email,redirect_to:new URL("/reset-password",request.url).toString()})});return NextResponse.json({ok:true});}catch{return NextResponse.json({message:"Reset is unavailable."},{status:500});}}
