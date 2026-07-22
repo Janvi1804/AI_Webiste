@@ -1,22 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/session";
+import { demoWorkspaceId, isDemoMode } from "@/lib/demo";
 import { supabaseRequest } from "@/lib/supabase/server";
 import { resolveActiveOrganization } from "@/services/organization-service";
-
-export async function GET() {
-  const userId = await getSessionUserId();
-  if (!userId) return NextResponse.json({ message: "Sign in to load your workspace." }, { status: 401 });
-  try {
-    const workspace = await resolveActiveOrganization(userId);
-    const id = workspace.organization.id;
-    const [projects, tasks, leads] = await Promise.all([
-      supabaseRequest<{ id: string }[]>(`projects?organization_id=eq.${id}&archived_at=is.null&status=neq.completed&select=id`),
-      supabaseRequest<{ id: string }[]>(`tasks?organization_id=eq.${id}&completed_at=is.null&select=id`),
-      supabaseRequest<{ estimated_value: number | null }[]>(`leads?organization_id=eq.${id}&stage=not.in.(won,lost)&select=estimated_value`),
-    ]);
-    return NextResponse.json({ organization: workspace.organization, role: workspace.role, metrics: { projects: projects.length, tasks: tasks.length, pipeline: leads.reduce((sum, lead) => sum + Number(lead.estimated_value ?? 0), 0) } });
-  } catch (cause) {
-    if (process.env.NODE_ENV === "development") console.error("Workspace summary failed", cause);
-    return NextResponse.json({ message: "Unable to load workspace. Please try again." }, { status: 500 });
-  }
-}
+export async function GET(){const userId=await getSessionUserId();if(!isDemoMode&&!userId)return NextResponse.json({message:"Sign in to load your workspace."},{status:401});try{const workspaceId=isDemoMode?demoWorkspaceId:(await resolveActiveOrganization(userId!)).organization.id;const key=isDemoMode?"workspace_id":"organization_id";const [workspaces,projects,tasks,leads]=await Promise.all([isDemoMode?supabaseRequest<{id:string;name:string}[]>(`workspaces?id=eq.${workspaceId}&select=id,name`):Promise.resolve([]),supabaseRequest<{id:string}[]>(`projects?${key}=eq.${workspaceId}&archived=eq.false&status=neq.completed&select=id`),supabaseRequest<{id:string}[]>(`tasks?${key}=eq.${workspaceId}&status=not.in.(completed,done)&select=id`),supabaseRequest<{estimated_value:number|null}[]>(`leads?${key}=eq.${workspaceId}&stage=not.in.(won,lost)&select=estimated_value`)]);const organization=isDemoMode?workspaces[0]: (await resolveActiveOrganization(userId!)).organization;if(!organization)return NextResponse.json({message:"No workspace found."},{status:404});return NextResponse.json({organization,role:isDemoMode?"demo":(await resolveActiveOrganization(userId!)).role,metrics:{projects:projects.length,tasks:tasks.length,pipeline:leads.reduce((sum,x)=>sum+Number(x.estimated_value??0),0)},demo:isDemoMode});}catch(cause){if(process.env.NODE_ENV==="development")console.error("Workspace summary failed",cause);return NextResponse.json({message:"Unable to load workspace. Please try again."},{status:500});}}
