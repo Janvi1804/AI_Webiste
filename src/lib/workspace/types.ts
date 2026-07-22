@@ -1,4 +1,4 @@
-export const workspaceModules = ["projects", "tasks", "customers", "leads"] as const;
+export const workspaceModules = ["projects", "tasks", "customers", "leads", "meetings"] as const;
 export type WorkspaceModule = (typeof workspaceModules)[number];
 export type Project = { id:string; name:string; client:string|null; description:string|null; status:string; start_date:string|null; due_date:string|null; budget:number|null; progress:number; priority:string; archived_at:string|null; created_at:string };
 export type Task = { id:string; title:string; project_id:string|null; assignee_id:string|null; due_date:string|null; status:string; priority:string; description:string|null; labels:string[]; completed_at:string|null; created_at:string };

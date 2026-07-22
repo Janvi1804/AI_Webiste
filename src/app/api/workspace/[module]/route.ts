@@ -5,8 +5,8 @@ import { supabaseRequest } from "@/lib/supabase/server";
 import { resolveActiveOrganization } from "@/services/organization-service";
 import { workspaceModules, type WorkspaceModule } from "@/lib/workspace/types";
 
-const permissions: Record<WorkspaceModule, Permission> = { projects:"project.create", tasks:"task.create", customers:"record.write", leads:"record.write" };
-const required: Record<WorkspaceModule, string[]> = { projects:["name"], tasks:["title"], customers:["name"], leads:["name"] };
+const permissions: Record<WorkspaceModule, Permission> = { projects:"project.create", tasks:"task.create", customers:"record.write", leads:"record.write", meetings:"record.write" };
+const required: Record<WorkspaceModule, string[]> = { projects:["name"], tasks:["title"], customers:["name"], leads:["name"], meetings:["title"] };
 function moduleFor(value:string):WorkspaceModule|null { return workspaceModules.includes(value as WorkspaceModule) ? value as WorkspaceModule : null; }
 function error(message:string,status:number){ return NextResponse.json({message},{status}); }
 async function context(module:string, write=false) { const entity=moduleFor(module); if(!entity) return null; const workspace=await resolveActiveOrganization(await requireUser()); if(write&&!can(workspace.role,permissions[entity])) throw new Error("FORBIDDEN"); return {entity,workspace}; }

@@ -7,3 +7,5 @@ alter table public.leads add column if not exists company text, add column if no
 create index if not exists projects_organization_created_idx on public.projects(organization_id, created_at desc);
 create index if not exists tasks_organization_due_idx on public.tasks(organization_id, due_date);
 create index if not exists leads_organization_stage_idx on public.leads(organization_id, stage);
+
+alter table public.meetings add column if not exists attendees text[] not null default '{}', add column if not exists customer_id uuid references public.customers(id) on delete set null, add column if not exists project_id uuid references public.projects(id) on delete set null, add column if not exists meeting_link text, add column if not exists agenda text;
