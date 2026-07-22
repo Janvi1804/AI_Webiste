@@ -1,0 +1,5 @@
+import type { OrganizationRole } from "@/types/auth";
+export type Permission = "organization.manage" | "project.create" | "task.create" | "task.update" | "record.read" | "record.write";
+const grants: Record<OrganizationRole, readonly Permission[]> = { owner:["organization.manage","project.create","task.create","task.update","record.read","record.write"],admin:["organization.manage","project.create","task.create","task.update","record.read","record.write"],manager:["project.create","task.create","task.update","record.read","record.write"],member:["task.create","task.update","record.read","record.write"],viewer:["record.read"],support_agent:["task.create","task.update","record.read","record.write"],sales_representative:["task.create","task.update","record.read","record.write"] };
+export function can(role: OrganizationRole, permission: Permission) { return grants[role].includes(permission); }
+export function canWrite(role: OrganizationRole) { return role !== "viewer"; }
