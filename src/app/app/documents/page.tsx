@@ -1,2 +1,7 @@
 import { redirect } from "next/navigation";
-export default function DocumentsPage(){ redirect("/app"); }
+
+function DocumentsPage() {
+  redirect("/app");
+}
+
+export default DocumentsPage;

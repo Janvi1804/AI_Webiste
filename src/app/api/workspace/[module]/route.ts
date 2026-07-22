@@ -1,0 +1,14 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/session";
+import { can, type Permission } from "@/lib/permissions";
+import { supabaseRequest } from "@/lib/supabase/server";
+import { resolveActiveOrganization } from "@/services/organization-service";
+import { workspaceModules, type WorkspaceModule } from "@/lib/workspace/types";
+
+const permissions: Record<WorkspaceModule, Permission> = { projects:"project.create", tasks:"task.create", customers:"record.write", leads:"record.write", meetings:"record.write" };
+const required: Record<WorkspaceModule, string[]> = { projects:["name"], tasks:["title"], customers:["name"], leads:["name"], meetings:["title"] };
+function moduleFor(value:string):WorkspaceModule|null { return workspaceModules.includes(value as WorkspaceModule) ? value as WorkspaceModule : null; }
+function error(message:string,status:number){ return NextResponse.json({message},{status}); }
+async function context(module:string, write=false) { const entity=moduleFor(module); if(!entity) return null; const workspace=await resolveActiveOrganization(await requireUser()); if(write&&!can(workspace.role,permissions[entity])) throw new Error("FORBIDDEN"); return {entity,workspace}; }
+export async function GET(_:NextRequest,{params}:{params:Promise<{module:string}>}) { try { const found=await context((await params).module); if(!found) return error("Unknown module",404); const data=await supabaseRequest<unknown[]>(`${found.entity}?organization_id=eq.${found.workspace.organization.id}&order=created_at.desc`); return NextResponse.json({data}); } catch { return error("Unable to load workspace records.",500); } }
+export async function POST(request:NextRequest,{params}:{params:Promise<{module:string}>}) { try { const found=await context((await params).module,true); if(!found)return error("Unknown module",404); const input=await request.json() as Record<string,unknown>; if(required[found.entity].some(key=>typeof input[key]!=="string"||!String(input[key]).trim())) return error(`A ${required[found.entity][0]} is required.`,400); const data=await supabaseRequest<unknown[]>(found.entity,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({...input,organization_id:found.workspace.organization.id,created_by:found.workspace.profile.id})}); return NextResponse.json({data:data[0]},{status:201}); } catch (reason) { return error(reason instanceof Error&&reason.message==="FORBIDDEN"?"You do not have permission for this action.":"Unable to create record.",403); } }
