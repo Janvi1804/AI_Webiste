@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function VerifyEmail(){return <main className="auth-page"><section className="auth-card"><p className="auth-kicker">ONE LAST STEP</p><h1>Verify your email</h1><p>We sent a secure verification link to your inbox. After confirming, return here to access your workspace.</p><Link className="auth-submit auth-link-button" href="/login">Back to sign in</Link></section></main>}
