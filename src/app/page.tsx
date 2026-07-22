@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+type WorkspaceSummary = { organization:{name:string}; role:string; metrics:{projects:number; tasks:number; pipeline:number} };
+
 type NavItem = { icon: string; label: string; badge?: string };
 
 const navigation: NavItem[] = [
@@ -29,6 +31,10 @@ export default function Home() {
   const [created, setCreated] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [newItem, setNewItem] = useState("New project");
+  const [newType, setNewType] = useState("projects");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
+  const [summaryError, setSummaryError] = useState(false);
 
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
@@ -38,10 +44,15 @@ export default function Home() {
     window.addEventListener("keydown", listener); return () => window.removeEventListener("keydown", listener);
   }, []);
 
+  useEffect(() => {
+    fetch("/api/workspace/summary").then(async response => { if (!response.ok) throw new Error("Summary unavailable"); return response.json() as Promise<WorkspaceSummary>; }).then(setSummary).catch(() => setSummaryError(true));
+  }, []);
+
+  const metrics = summary?.metrics;
   return <main className={dark ? "app dark" : "app"}>
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark"><span></span><span></span><span></span></div><span>opervia<span className="brand-dot">.</span></span></div>
-      <button className="workspace"><span className="workspace-logo">N</span><span><b>Northstar Studio</b><small>Growth workspace</small></span><span className="chevron">⌄</span></button>
+      <button className="workspace"><span className="workspace-logo">N</span><span><b>{summary?.organization.name ?? "Workspace"}</b><small>{summary ? `${summary.role.replaceAll("_", " ")} workspace` : "Loading workspace…"}</small></span><span className="chevron">⌄</span></button>
       <nav aria-label="Main navigation">
         <p className="nav-label">WORKSPACE</p>
         {navigation.map(item => <button key={item.label} onClick={() => { setActive(item.label); }} className={`nav-item ${active === item.label ? "active" : ""}`}><span className="nav-icon">{item.icon}</span>{item.label}{item.badge && <em>{item.badge}</em>}</button>)}
@@ -58,15 +69,15 @@ export default function Home() {
     </aside>
 
     <section className="content">
-      <header className="topbar"><div className="crumb"><span>Northstar Studio</span><b>/</b><strong>{active}</strong></div><div className="top-actions"><button onClick={() => setSearchOpen(true)} className="search"><span>⌕</span><span>Search anything</span><kbd>⌘ K</kbd></button><button className="icon-btn" aria-label="Notifications">♧<i></i></button><button onClick={() => setAssistantOpen(true)} className="assistant-button">✦ <span>Ask AI</span></button><button onClick={() => setCreateOpen(true)} className="create-button">＋ <span>Create</span></button></div></header>
+      <header className="topbar"><div className="crumb"><span>{summary?.organization.name ?? "Workspace"}</span><b>/</b><strong>{active}</strong></div><div className="top-actions"><button onClick={() => setSearchOpen(true)} className="search"><span>⌕</span><span>Search anything</span><kbd>⌘ K</kbd></button><button className="icon-btn" aria-label="Notifications">♧<i></i></button><button onClick={() => setAssistantOpen(true)} className="assistant-button">✦ <span>Ask AI</span></button><button onClick={() => setCreateOpen(true)} className="create-button">＋ <span>Create</span></button></div></header>
       <div className="page">
         <section className="intro"><div><p className="eyebrow">MONDAY, AUGUST 5</p><h1>Good morning, Janvi <span>✦</span></h1><p>Here is what needs your attention today.</p></div><div className="intro-actions"><button className="ghost-button">▦ Customize</button><button onClick={() => setCreateOpen(true)} className="primary-button">＋ Create new</button></div></section>
 
         {active !== "Overview" && <ModuleBanner title={active} onCreate={() => setCreateOpen(true)} />}
         <section className="metrics" aria-label="Business metrics">
-          <Metric icon="◫" title="Active projects" value="12" change="↑ 8.2%" detail="vs. last month" tint="violet" spark="spark-one" />
-          <Metric icon="✓" title="Tasks due today" value="8" change="2 overdue" detail="needs attention" tint="orange" spark="spark-two" />
-          <Metric icon="◈" title="Open pipeline" value="$84.2k" change="↑ 12.4%" detail="vs. last month" tint="blue" spark="spark-three" />
+          <Metric icon="◫" title="Active projects" value={metrics ? String(metrics.projects) : "…"} change={summaryError ? "Unavailable" : "Live data"} detail="in this workspace" tint="violet" spark="spark-one" />
+          <Metric icon="✓" title="Open tasks" value={metrics ? String(metrics.tasks) : "…"} change={summaryError ? "Unavailable" : "Live data"} detail="in this workspace" tint="orange" spark="spark-two" />
+          <Metric icon="◈" title="Open pipeline" value={metrics ? new Intl.NumberFormat("en-US", {style:"currency", currency:"USD", maximumFractionDigits:0}).format(metrics.pipeline) : "…"} change={summaryError ? "Unavailable" : "Live data"} detail="active leads" tint="blue" spark="spark-three" />
           <Metric icon="◌" title="Team capacity" value="76%" change="Healthy" detail="across 8 teammates" tint="green" spark="spark-four" />
         </section>
 
@@ -88,7 +99,7 @@ export default function Home() {
 
     {searchOpen && <div className="modal-wrap" role="dialog" aria-modal="true" aria-label="Search"><div className="command"><div className="command-search">⌕<input autoFocus placeholder="Search projects, tasks, customers..."/><kbd>ESC</kbd></div><p>QUICK ACTIONS</p>{["Create a new project", "Ask Opervia AI", "View tasks due today"].map(x => <button key={x} onClick={() => setSearchOpen(false)}>{x}<span>↵</span></button>)}</div></div>}
     {assistantOpen && <div className="assistant-drawer"><header><div><span className="ai-icon big">✦</span><div><b>Opervia AI</b><small>Your operations copilot</small></div></div><button onClick={() => setAssistantOpen(false)}>×</button></header><div className="assistant-chat"><div className="ai-message">I found <b>3 delivery risks</b> that need attention. Would you like a recovery plan for the affected projects?</div><div className="tool-status"><span>✓</span><div><b>Project health checked</b><small>Reviewed 12 active projects</small></div></div></div><div className="suggestions"><button>Show delayed projects</button><button>Create a task</button><button>Generate weekly report</button></div><div className="chat-input"><input placeholder="Ask anything about your business..."/><button>↑</button></div></div>}
-    {createOpen && <div className="modal-wrap" role="dialog" aria-modal="true" aria-label="Create new item"><form className="create-modal" onSubmit={(event) => { event.preventDefault(); setCreateOpen(false); setCreated(true); }}><button className="modal-close" type="button" onClick={() => setCreateOpen(false)}>×</button><p className="auth-kicker">CREATE</p><h2>Create something new</h2><p>Start a project, task, customer, or another workspace record.</p><label>Item name<input value={newItem} onChange={(event) => setNewItem(event.target.value)} autoFocus required /></label><label>Type<select defaultValue="Project"><option>Project</option><option>Task</option><option>Customer</option><option>Lead</option><option>Meeting</option></select></label><div><button type="button" className="ghost-button" onClick={() => setCreateOpen(false)}>Cancel</button><button className="primary-button" type="submit">Create item</button></div></form></div>}
+    {createOpen && <div className="modal-wrap" role="dialog" aria-modal="true" aria-label="Create new item"><form className="create-modal" onSubmit={async (event) => { event.preventDefault(); setCreateError(null); const titleKey = newType === "tasks" ? "title" : "name"; const response = await fetch(`/api/workspace/${newType}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({[titleKey]:newItem}) }); const body = await response.json(); if (!response.ok) { setCreateError(body.message ?? "Unable to create item."); return; } setCreateOpen(false); setCreated(true); window.location.reload(); }}><button className="modal-close" type="button" onClick={() => setCreateOpen(false)}>×</button><p className="auth-kicker">CREATE</p><h2>Create something new</h2><p>Start a project, task, customer, or another workspace record.</p><label>Item name<input value={newItem} onChange={(event) => setNewItem(event.target.value)} autoFocus required /></label><label>Type<select value={newType} onChange={(event) => setNewType(event.target.value)}><option value="projects">Project</option><option value="tasks">Task</option><option value="customers">Customer</option><option value="leads">Lead</option></select></label>{createError && <p className="form-error" role="alert">{createError}</p>}<div><button type="button" className="ghost-button" onClick={() => setCreateOpen(false)}>Cancel</button><button className="primary-button" type="submit">Create item</button></div></form></div>}
     {created && <div className="toast"><span>✓</span><div><b>{newItem} created</b><small>Your new workspace item is ready to organize.</small></div><button onClick={() => setCreated(false)}>×</button></div>}
   </main>;
 }

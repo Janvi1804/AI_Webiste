@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/session";
+import { supabaseRequest } from "@/lib/supabase/server";
+import { resolveActiveOrganization } from "@/services/organization-service";
+export async function GET(){try { const workspace=await resolveActiveOrganization(await requireUser()); const id=workspace.organization.id; const [projects,tasks,leads]=await Promise.all([supabaseRequest<{count:number}[]>(`projects?organization_id=eq.${id}&archived_at=is.null&select=count()`),supabaseRequest<{count:number}[]>(`tasks?organization_id=eq.${id}&completed_at=is.null&select=count()`),supabaseRequest<{estimated_value:number|null}[]>(`leads?organization_id=eq.${id}&stage=not.in.(lost)&select=estimated_value`)]); return NextResponse.json({organization:workspace.organization,role:workspace.role,metrics:{projects:projects[0]?.count??0,tasks:tasks[0]?.count??0,pipeline:leads.reduce((sum,lead)=>sum+Number(lead.estimated_value??0),0)}});}catch{return NextResponse.json({message:"Unable to load workspace summary."},{status:500});}}
