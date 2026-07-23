@@ -1,7 +1,2 @@
-import { redirect } from "next/navigation";
-
-function DocumentsPage() {
-  redirect("/app");
-}
-
-export default DocumentsPage;
+import { WorkspaceModulePage } from "@/components/workspace/module-page";
+export default function Page(){ return <WorkspaceModulePage module="documents" title="Documents" singular="Document" />; }

@@ -1,2 +1,2 @@
-import { redirect } from "next/navigation";
-export default function MeetingsPage(){ redirect("/app"); }
+import { WorkspaceModulePage } from "@/components/workspace/module-page";
+export default function Page(){ return <WorkspaceModulePage module="meetings" title="Meetings" singular="Meeting" />; }
